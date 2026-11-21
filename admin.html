@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DevDuel Live Dashboard - Participant Submissions</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+
+  <!-- Firebase Compat SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="firebase-config.js"></script>
+</head>
+<body>
+  <div class="glow-bg glow-1"></div>
+  <div class="glow-bg glow-2"></div>
+  <div class="grid-overlay"></div>
+
+  <div class="app-container dashboard-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="brand">
+        <a href="index.html" class="brand-link" style="text-decoration:none; display:flex; align-items:center; gap:0.6rem;">
+          <span class="brand-icon">⚡</span>
+          <span class="brand-name">DevDuel</span>
+        </a>
+        <span class="badge-lang">Admin Dashboard</span>
+      </div>
+      <div class="header-controls">
+        <button id="addTestBtn" class="btn btn-outline btn-sm" title="Generate a sample submission to test the dashboard">
+          <span>🧪 Add Test Friend</span>
+        </button>
+        <button id="exportCsvBtn" class="btn btn-secondary btn-sm" title="Export all submissions to CSV/Excel">
+          <span>📥 Export CSV</span>
+        </button>
+        <button id="configBtn" class="btn btn-secondary btn-sm" title="Configure Firebase">
+          <span>⚙️ Firebase Setup</span>
+        </button>
+        <a href="index.html" class="btn btn-primary btn-sm">
+          <span>🎮 Take Quiz</span>
+        </a>
+      </div>
+    </header>
+
+    <!-- Main Dashboard Section -->
+    <main class="dashboard-main">
+      <!-- Status Notice Banner -->
+      <div id="connectionBanner" class="connection-status-bar status-disconnected">
+        <div class="status-indicator-dot"></div>
+        <div class="status-text">
+          <strong id="statusTitle">Firebase Not Configured</strong>
+          <span id="statusSub">Please add your Firebase keys to start viewing real-time quiz results.</span>
+        </div>
+        <button id="openSetupBtn" class="btn btn-sm btn-setup">Setup Firebase</button>
+      </div>
+
+      <!-- Quick Metrics Grid -->
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <span class="metric-icon">👥</span>
+          <div class="metric-details">
+            <span class="metric-val" id="totalParticipants">0</span>
+            <span class="metric-label">Participants</span>
+          </div>
+        </div>
+        <div class="metric-card">
+          <span class="metric-icon">🏆</span>
+          <div class="metric-details">
+            <span class="metric-val" id="topScore">0</span>
+            <span class="metric-label">Highest Score</span>
+          </div>
+        </div>
+        <div class="metric-card">
+          <span class="metric-icon">📊</span>
+          <div class="metric-details">
+            <span class="metric-val" id="avgScore">0</span>
+            <span class="metric-label">Average Score</span>
+          </div>
+        </div>
+        <div class="metric-card">
+          <span class="metric-icon">🔥</span>
+          <div class="metric-details">
+            <span class="metric-val" id="maxStreak">0x</span>
+            <span class="metric-label">Best Streak</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Submissions Section -->
+      <section class="card submissions-card">
+        <div class="submissions-header">
+          <div>
+            <h2 class="section-title">Live Participant Submissions</h2>
+            <p class="section-subtitle">Real-time submissions from friends taking the quiz.</p>
+          </div>
+          <div class="filter-controls">
+            <input type="text" id="searchInput" placeholder="Search by friend's name..." class="search-input">
+            <button id="refreshBtn" class="btn-icon" title="Refresh data">🔄</button>
+          </div>
+        </div>
+
+        <!-- Submissions Table / Feed List -->
+        <div id="submissionsList" class="submissions-list">
+          <div class="empty-state" id="emptyState">
+            <span class="empty-icon">📡</span>
+            <h3>Waiting for Submissions</h3>
+            <p>Once your friends complete the quiz, their scores and answers will appear here live in real-time!</p>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Firebase Setup Modal -->
+  <div id="setupModal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>🔥 Connect Firebase</h3>
+        <button id="closeModalBtn" class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-intro">
+          Paste your Firebase web config credentials below. You can find this in your <strong>Firebase Console &gt; Project Settings &gt; General &gt; Your apps &gt; Web app (&lt;/&gt;)</strong>.
+        </p>
+
+        <div class="form-group">
+          <label for="cfgApiKey">API Key:</label>
+          <input type="text" id="cfgApiKey" placeholder="AIzaSy...">
+        </div>
+        <div class="form-group">
+          <label for="cfgProjectId">Project ID:</label>
+          <input type="text" id="cfgProjectId" placeholder="my-quiz-project">
+        </div>
+        <div class="form-group">
+          <label for="cfgAuthDomain">Auth Domain:</label>
+          <input type="text" id="cfgAuthDomain" placeholder="my-quiz-project.firebaseapp.com">
+        </div>
+        <div class="form-group">
+          <label for="cfgAppId">App ID:</label>
+          <input type="text" id="cfgAppId" placeholder="1:123456789:web:abcdef">
+        </div>
+
+        <div class="modal-paste-box">
+          <label>Or paste entire <code>firebaseConfig = { ... }</code> snippet:</label>
+          <textarea id="cfgRawSnippet" rows="4" placeholder="const firebaseConfig = { apiKey: '...', ... };"></textarea>
+          <button id="parseSnippetBtn" class="btn btn-secondary btn-sm" style="margin-top:0.4rem;">Auto-Fill Fields</button>
+        </div>
+
+        <div class="firestore-rules-tip">
+          <strong>💡 Important Firestore Rule Tip:</strong>
+          <p>In Firebase Console &gt; <strong>Firestore Database &gt; Rules</strong>, ensure you set read/write to true for testing:</p>
+          <code>allow read, write: if true;</code>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="clearConfigBtn" class="btn btn-outline btn-sm">Reset</button>
+        <button id="saveConfigBtn" class="btn btn-primary">Save &amp; Connect</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Submission Detail Modal -->
+  <div id="detailModal" class="modal-overlay hidden">
+    <div class="modal-card modal-large">
+      <div class="modal-header">
+        <h3 id="detailPlayerTitle">Participant Review</h3>
+        <button id="closeDetailModal" class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body" id="detailModalBody">
+        <!-- Injected dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <script src="audio.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DevDuel: The Ultimate HTML & Python Coding Quiz</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <!-- Canvas Confetti library for high-energy celebrations -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  <!-- Firebase Compat SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="firebase-config.js"></script>
+</head>
+<body>
+  <!-- Ambient background glow elements -->
+  <div class="glow-bg glow-1"></div>
+  <div class="glow-bg glow-2"></div>
+  <div class="grid-overlay"></div>
+
+  <div class="app-container">
+    <!-- Top Bar with Sound Toggle and Brand -->
+    <header class="app-header">
+      <div class="brand">
+        <span class="brand-icon">⚡</span>
+        <span class="brand-name">DevDuel</span>
+        <span class="badge-lang">HTML &amp; Python</span>
+      </div>
+      <div class="header-controls">
+        <a href="admin.html" class="btn btn-secondary btn-sm" title="View friend submissions in real-time">
+          <span>📊 Live Results</span>
+        </a>
+        <button id="soundToggle" class="btn-icon" title="Toggle Sound FX" aria-label="Toggle Sound">
+          <span id="soundIcon">🔊</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Start / Intro Screen -->
+    <section id="startScreen" class="screen active">
+      <div class="card intro-card">
+        <div class="mascot-wrapper">
+          <div id="introMascot" class="pixel-mascot mascot-idle"></div>
+        </div>
+        
+        <h1 class="title-gradient">The "Are You Actually A Dev?" Quiz</h1>
+        <p class="subtitle">
+          Questions ranging from <span class="tag tag-easy">Easy</span> to <span class="tag tag-hard">Galaxy Brain</span>.
+          Harder questions yield massive points. Wrong answers come with complimentary emotional damage.
+        </p>
+
+        <!-- Scoring Tiers Preview -->
+        <div class="points-preview">
+          <div class="tier-pill tier-easy">
+            <span class="tier-icon">🟢</span>
+            <div class="tier-info">
+              <span class="tier-name">Warm Up (Easy)</span>
+              <span class="tier-pts">+10 pts</span>
+            </div>
+          </div>
+          <div class="tier-pill tier-med">
+            <span class="tier-icon">🟡</span>
+            <div class="tier-info">
+              <span class="tier-name">Mid-Level (Medium)</span>
+              <span class="tier-pts">+20 pts</span>
+            </div>
+          </div>
+          <div class="tier-pill tier-hard">
+            <span class="tier-icon">🔴</span>
+            <div class="tier-info">
+              <span class="tier-name">Senior Dev (Hard)</span>
+              <span class="tier-pts">+35 to +45 pts</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="rules-box">
+          <div class="rules-item">
+            <span class="rule-icon">🔥</span>
+            <span>Build <strong>Streak Combos</strong> to earn bonus multiplier flex!</span>
+          </div>
+          <div class="rules-item">
+            <span class="rule-icon">💡</span>
+            <span>Use <strong>Lifelines</strong> (50/50 & Sarcastic AI) when your brain 404s.</span>
+          </div>
+          <div class="rules-item">
+            <span class="rule-icon">⌨️</span>
+            <span>Supports <strong>Keyboard keys 1-4</strong> or <strong>A-D</strong> for speedrunners.</span>
+          </div>
+        </div>
+
+        <div class="friend-name-input-box">
+          <label for="friendName">Enter your coder alias (or victim's name):</label>
+          <div class="input-row">
+            <input type="text" id="friendName" placeholder="e.g. Master Hacker 9000" maxlength="20" autocomplete="off">
+            <button id="startBtn" class="btn btn-primary pulse-btn">
+              <span>Start Quiz</span>
+              <span class="btn-arrow">➔</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Quiz Screen -->
+    <section id="quizScreen" class="screen">
+      <!-- HUD / Status Bar -->
+      <div class="quiz-hud">
+        <div class="hud-item progress-meta">
+          <span class="hud-label">Question</span>
+          <span class="hud-value" id="questionCounter">1 / 12</span>
+        </div>
+
+        <div class="hud-item difficulty-meta">
+          <span id="diffBadge" class="difficulty-badge diff-easy">Easy • 10 pts</span>
+        </div>
+
+        <div class="hud-item streak-meta">
+          <span class="hud-label">Streak</span>
+          <span class="streak-pill" id="streakBadge">
+            <span id="streakFire">🔥</span>
+            <span id="streakCount">0x</span>
+          </span>
+        </div>
+
+        <div class="hud-item score-meta">
+          <span class="hud-label">Score</span>
+          <span class="score-value" id="scoreDisplay">0</span>
+        </div>
+      </div>
+
+      <!-- Animated Progress Bar -->
+      <div class="progress-bar-container">
+        <div id="progressBar" class="progress-bar-fill"></div>
+      </div>
+
+      <!-- Question Card Container -->
+      <div class="quiz-main-layout">
+        <!-- Center Question Board -->
+        <div class="card question-card" id="questionCard">
+          <div class="question-header">
+            <span class="lang-tag" id="langTag">PYTHON</span>
+            <span class="points-tag" id="pointsTag">+10 PTS</span>
+          </div>
+
+          <h2 class="question-text" id="questionText">Loading challenge...</h2>
+
+          <!-- Optional Code Snippet Block (Mac styled terminal) -->
+          <div class="code-terminal" id="codeTerminal">
+            <div class="terminal-bar">
+              <span class="dot dot-red"></span>
+              <span class="dot dot-yellow"></span>
+              <span class="dot dot-green"></span>
+              <span class="terminal-title" id="terminalTitle">snippet.py</span>
+            </div>
+            <pre class="terminal-body"><code id="codeSnippet"></code></pre>
+          </div>
+
+          <!-- Lifelines Toolbar -->
+          <div class="lifelines-bar">
+            <span class="lifelines-title">Emergency Lifelines:</span>
+            <div class="lifeline-buttons">
+              <button id="lifelineFifty" class="btn-lifeline" title="Remove 2 wrong answers">
+                <span class="lifeline-icon">✂️</span>
+                <span class="lifeline-name">50/50</span>
+                <span class="lifeline-count" id="fiftyCount">2 left</span>
+              </button>
+              <button id="lifelineAi" class="btn-lifeline" title="Ask Sarcastic AI for a hint">
+                <span class="lifeline-icon">🤖</span>
+                <span class="lifeline-name">Sarcastic AI</span>
+                <span class="lifeline-count" id="aiCount">2 left</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Sarcastic AI Hint Modal/Bubble -->
+          <div id="aiHintBox" class="ai-hint-box hidden">
+            <div class="ai-avatar">🤖</div>
+            <div class="ai-content">
+              <div class="ai-header">
+                <strong>Sarcastic Claude-Bot:</strong>
+                <button id="closeAiHint" class="ai-close-btn">&times;</button>
+              </div>
+              <p id="aiHintText">Thinking of a way to roast your coding skills...</p>
+            </div>
+          </div>
+
+          <!-- Options Grid -->
+          <div class="options-grid" id="optionsGrid">
+            <!-- Dynamically injected option cards -->
+          </div>
+
+          <!-- Feedback / Roast Banner (Appears after answering) -->
+          <div id="feedbackBanner" class="feedback-banner hidden">
+            <div class="feedback-icon" id="feedbackIcon">🎉</div>
+            <div class="feedback-body">
+              <h3 id="feedbackTitle">Brilliant!</h3>
+              <p id="feedbackRoast">You actually know how this works!</p>
+              <div class="feedback-explanation" id="feedbackExplanation"></div>
+            </div>
+            <button id="nextBtn" class="btn btn-next">
+              <span>Next Question</span>
+              <span>➔</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Floating Interactive Mascot on Side -->
+        <div class="side-mascot-panel">
+          <div class="mascot-speech-bubble" id="mascotBubble">
+            "Pick carefully. My RAM is watching."
+          </div>
+          <div id="liveMascot" class="pixel-mascot mascot-idle"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Results / Game Over Screen -->
+    <section id="resultScreen" class="screen">
+      <div class="card result-card">
+        <div class="result-header">
+          <div id="resultMascot" class="pixel-mascot mascot-celebrate"></div>
+          <span class="result-tag" id="resultRankBadge">SENIOR ARCHITECT</span>
+          <h1 class="result-title" id="resultTitle">Verdict: Certified Code Wizard!</h1>
+          <p class="result-friend-shoutout" id="resultShoutout">Not bad at all!</p>
+          <div id="firebaseSyncStatus" class="firebase-sync-status">
+            <span class="sync-dot"></span>
+            <span id="firebaseSyncText">Syncing score to host database...</span>
+          </div>
+        </div>
+
+        <!-- Big Score Showcase -->
+        <div class="score-showcase">
+          <div class="score-circle">
+            <div class="score-num" id="finalScore">0</div>
+            <div class="score-total" id="finalMaxScore">/ 310 PTS</div>
+          </div>
+          <div class="score-stats-grid">
+            <div class="stat-box">
+              <span class="stat-icon">🎯</span>
+              <span class="stat-val" id="statAccuracy">0%</span>
+              <span class="stat-label">Accuracy</span>
+            </div>
+            <div class="stat-box">
+              <span class="stat-icon">🔥</span>
+              <span class="stat-val" id="statStreak">0</span>
+              <span class="stat-label">Best Streak</span>
+            </div>
+            <div class="stat-box">
+              <span class="stat-icon">⏱️</span>
+              <span class="stat-val" id="statTime">0s</span>
+              <span class="stat-label">Time Taken</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Personalized Roast / Praise Paragraph -->
+        <div class="roast-certificate" id="roastCertificate">
+          <div class="cert-watermark">DEV CERTIFIED</div>
+          <h3 id="certTitle">Official Code Assessment</h3>
+          <p id="certDescription">Loading assessment...</p>
+        </div>
+
+        <!-- Actions: Share & Retry & Review -->
+        <div class="result-actions">
+          <button id="copyShareBtn" class="btn btn-secondary">
+            <span>📋 Copy Result for Discord/WhatsApp</span>
+          </button>
+          <button id="restartBtn" class="btn btn-primary">
+            <span>🔄 Play Again</span>
+          </button>
+          <button id="reviewBtn" class="btn btn-outline">
+            <span>📜 Review All Answers</span>
+          </button>
+        </div>
+        <div id="copyToast" class="copy-toast hidden">Copied to clipboard! Send it to your friend! 🚀</div>
+
+        <!-- Detailed Review Modal / Container -->
+        <div id="reviewContainer" class="review-container hidden">
+          <h3 class="review-heading">Question-by-Question Autopsy</h3>
+          <div id="reviewList" class="review-list"></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Audio elements generated via Web Audio API in app.js -->
+  <script src="questions.js"></script>
+  <script src="audio.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
